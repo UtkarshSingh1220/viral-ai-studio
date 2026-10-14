@@ -46,9 +46,9 @@ public class AiContentService {
                 "hook", Map.of("type", "string"),
                 "script", Map.of("type", "string"),
                 "caption", Map.of("type", "string"),
-                "hashtags", Map.of("type", "string")
+                "hashtags", Map.of("type", "string"),\n                "sourceLinks", Map.of("type", "string"),\n                "verificationNotes", Map.of("type", "string")
             ),
-            "required", java.util.List.of("hook", "script", "caption", "hashtags")
+            "required", java.util.List.of("hook", "script", "caption", "hashtags", "sourceLinks", "verificationNotes")
         );
 
         Map<String, Object> payload = Map.of(
@@ -60,7 +60,7 @@ public class AiContentService {
                 Avoid clickbait that misrepresents the content. Keep language conversational and accessible to a technical audience.
                 Return only the requested structured fields. Put line breaks between spoken beats in script. Hashtags must be relevant and restrained.
                 """,
-            "input", "Create a " + platformName + " draft about this topic: " + topic,
+            "input", "Research and create a " + platformName + " draft about this topic: " + topic,\n            "tools", java.util.List.of(Map.of("type", "web_search")),
             "text", Map.of("format", Map.of(
                 "type", "json_schema",
                 "name", "short_video_script",
