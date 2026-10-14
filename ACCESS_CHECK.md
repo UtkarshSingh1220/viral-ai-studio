@@ -1,1 +1,0 @@
-Temporary write-access verification file. Remove after verification if desired.
