@@ -6,7 +6,7 @@ A semi-automated content studio for Hinglish AI and technology videos on Instagr
 
 - React + TypeScript dashboard with content cards, search, status filters, draft creation, and editorial review.
 - Java 21 + Spring Boot REST API with PostgreSQL persistence and Flyway migrations.
-- AI-powered script generation through the OpenAI Responses API with schema-constrained JSON output and optional live web research.
+- AI-powered production package generation through the OpenAI Responses API: hook, Hinglish script, caption, hashtags, CTA, estimated duration, scene-by-scene storyboard, source links, and verification notes.
 - Trend research endpoint for current AI/technology video ideas with source URLs and audience-specific Hinglish angles.
 - Persistent per-post/per-platform performance snapshots and a dashboard with engagement rate, top performers, and rule-based content recommendations.
 - Editorial states: IDEA, DRAFT, IN_REVIEW, APPROVED, REJECTED, PUBLISHED.
@@ -26,7 +26,7 @@ Backend uses `OPENAI_API_KEY` and optional `OPENAI_MODEL` (defaults to `gpt-4o-m
 
 - `GET /api/content` — list content; optional `?status=DRAFT`
 - `POST /api/content` — save a manually authored draft
-- `POST /api/content/generate` — generate a Hinglish draft; body: `{"topic":"RAG for Java developers","platform":"BOTH"}`
+- `POST /api/content/generate` — generate and persist a complete Hinglish production package; body: `{"topic":"RAG for Java developers","platform":"BOTH"}`. The response includes `cta`, `durationSeconds`, and `storyboard` (a JSON string containing timecoded visual directions, voiceover, and on-screen text for each scene).
 - `GET /api/trends` — research current AI/technology video ideas with source URLs
 - `PATCH /api/content/{id}/status` — update editorial status and notes
 - `DELETE /api/content/{id}` — delete a content item
@@ -37,7 +37,7 @@ Engagement rate is calculated as `(likes + comments + shares + saves) / views * 
 
 ## Important limitations
 
-- Generated content is a draft, not a verified fact-check. Verify claims and current information before publishing.
+- Generated content is a draft, not a verified fact-check. Web-research URLs and verification notes are review aids, not proof that every claim is accurate. Verify claims and current information before publishing.
 - Analytics snapshots are currently entered through the API; official Instagram/YouTube analytics ingestion is not connected.
 - Social publishing is not automatic; official platform API credentials, permissions, and account eligibility are required.
 - Never commit API keys or credentials.
