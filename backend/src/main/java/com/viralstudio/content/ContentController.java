@@ -36,7 +36,7 @@ public class ContentController {
         GeneratedContent generated = aiContentService.generate(request.topic(), request.platform());
         ContentItem item = new ContentItem(request.topic(), generated.hook(), generated.script(),
             generated.caption(), generated.hashtags(), request.platform());
-        item.setEditorNotes("AI-generated draft. Verify factual claims, current details, and sources before publishing.");
+        item.setEditorNotes("AI verification notes: " + generated.verificationNotes() + "\nSources to review:\n" + generated.sourceLinks() + "\nVerify factual claims before publishing.");
         return repository.save(item);
     }
 
