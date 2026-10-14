@@ -5,6 +5,9 @@ public record GeneratedContent(
     String script,
     String caption,
     String hashtags,
+    String cta,
+    Integer durationSeconds,
+    String storyboard,
     String sourceLinks,
     String verificationNotes
 ) {}

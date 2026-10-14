@@ -34,6 +34,15 @@ public class ContentItem {
     @Column(nullable = false, length = 30)
     private ContentStatus status = ContentStatus.DRAFT;
 
+    @Column(length = 500)
+    private String cta;
+
+    @Column
+    private Integer durationSeconds;
+
+    @Column(columnDefinition = "text")
+    private String storyboard;
+
     @Column(length = 1000)
     private String sourceUrl;
 
@@ -72,7 +81,15 @@ public class ContentItem {
     public String getHashtags() { return hashtags; }
     public ContentPlatform getPlatform() { return platform; }
     public ContentStatus getStatus() { return status; }
+    public String getCta() { return cta; }
+    public Integer getDurationSeconds() { return durationSeconds; }
+    public String getStoryboard() { return storyboard; }
     public String getSourceUrl() { return sourceUrl; }
+    public void setProductionPackage(String cta, Integer durationSeconds, String storyboard) {
+        this.cta = cta;
+        this.durationSeconds = durationSeconds;
+        this.storyboard = storyboard;
+    }
     public String getEditorNotes() { return editorNotes; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

@@ -3,11 +3,13 @@ package com.viralstudio.content;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
+
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -39,6 +41,17 @@ public class AiContentService {
                 case BOTH -> "Instagram Reels and YouTube Shorts";
             };
 
+        Map<String, Object> sceneSchema = Map.of(
+            "type", "object",
+            "additionalProperties", false,
+            "properties", Map.of(
+                "timecode", Map.of("type", "string"),
+                "visual", Map.of("type", "string"),
+                "voiceover", Map.of("type", "string"),
+                "onScreenText", Map.of("type", "string")
+            ),
+            "required", List.of("timecode", "visual", "voiceover", "onScreenText")
+        );
         Map<String, Object> schema = Map.of(
             "type", "object",
             "additionalProperties", false,
@@ -46,24 +59,36 @@ public class AiContentService {
                 "hook", Map.of("type", "string"),
                 "script", Map.of("type", "string"),
                 "caption", Map.of("type", "string"),
-                "hashtags", Map.of("type", "string"),\n                "sourceLinks", Map.of("type", "string"),\n                "verificationNotes", Map.of("type", "string")
+                "hashtags", Map.of("type", "string"),
+                "cta", Map.of("type", "string"),
+                "durationSeconds", Map.of("type", "integer"),
+                "storyboard", Map.of("type", "array", "items", sceneSchema),
+                "sourceLinks", Map.of("type", "string"),
+                "verificationNotes", Map.of("type", "string")
             ),
-            "required", java.util.List.of("hook", "script", "caption", "hashtags", "sourceLinks", "verificationNotes")
+            "required", List.of("hook", "script", "caption", "hashtags", "cta",
+                "durationSeconds", "storyboard", "sourceLinks", "verificationNotes")
         );
 
         Map<String, Object> payload = Map.of(
             "model", model,
             "instructions", """
-                You are a careful short-form video scriptwriter for an Indian creator making AI and technology content in natural Hinglish.
-                Produce a useful 25-40 second script with a compelling but honest opening hook, clear explanation, concrete example, and audience CTA.
-                Do not invent breaking trends, statistics, sources, product capabilities, or factual claims. If the topic depends on recent facts, flag that the creator must verify them before publishing.
-                Avoid clickbait that misrepresents the content. Keep language conversational and accessible to a technical audience.
-                Return only the requested structured fields. Put line breaks between spoken beats in script. Hashtags must be relevant and restrained.
+                You are a careful short-form video producer for an Indian creator making AI and technology content in natural Hinglish.
+                Create a production-ready 25-40 second vertical video package for the requested platform.
+                Include an honest hook, conversational spoken script with clear beats, concrete example, one specific CTA,
+                concise caption, relevant restrained hashtags, and 4-7 storyboard scenes.
+                Every storyboard scene must include a timecode, practical visual direction, matching voiceover, and readable on-screen text.
+                The storyboard voiceover must follow the script. Keep visuals feasible for a solo creator or stock/AI-generated assets.
+                Do not invent breaking trends, statistics, citations, product capabilities, or factual claims.
+                Use web search when current information is relevant. Put URLs actually consulted in sourceLinks.
+                Flag uncertain or time-sensitive claims in verificationNotes. Never claim that sources prove something they do not.
+                Return only the requested structured fields. Use natural Hinglish and an educational, technically credible tone.
                 """,
-            "input", "Research and create a " + platformName + " draft about this topic: " + topic,\n            "tools", java.util.List.of(Map.of("type", "web_search")),
+            "input", "Create a complete short-form production package about: " + topic + ". Target platform: " + platformName + ". Audience: Indian developers and curious technology learners.",
+            "tools", List.of(Map.of("type", "web_search")),
             "text", Map.of("format", Map.of(
                 "type", "json_schema",
-                "name", "short_video_script",
+                "name", "short_video_package",
                 "strict", true,
                 "schema", schema
             ))
@@ -84,7 +109,12 @@ public class AiContentService {
                 generated.path("hook").asText(),
                 generated.path("script").asText(),
                 generated.path("caption").asText(),
-                generated.path("hashtags").asText()
+                generated.path("hashtags").asText(),
+                generated.path("cta").asText(),
+                generated.path("durationSeconds").asInt(30),
+                objectMapper.writeValueAsString(generated.path("storyboard")),
+                generated.path("sourceLinks").asText(),
+                generated.path("verificationNotes").asText()
             );
         } catch (ResponseStatusException ex) {
             throw ex;
