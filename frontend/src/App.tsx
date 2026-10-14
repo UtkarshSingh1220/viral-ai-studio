@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Activity, ArrowUpRight, Check, Clapperboard, FileText, Flame, Plus, Search, Sparkles, Youtube, Instagram, X } from 'lucide-react';
 
 type Status = 'IDEA' | 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED';
+type Trend = { title: string; angle: string; whyNow: string; audienceFit: string; sourceUrls: string[] };
 type Item = { id: string; topic: string; hook: string; script: string; caption: string | null; hashtags: string | null; platform: 'INSTAGRAM_REELS' | 'YOUTUBE_SHORTS' | 'BOTH'; status: Status; editorNotes?: string | null; createdAt: string };
 const demoItems: Item[] = [
  { id:'demo-1', topic:'AI agents vs chatbots', hook:'ChatGPT aur AI Agent same cheez nahi hain — difference samjho.', script:'Hook (0–3s): AI chatbot aur AI agent mein difference pata hai?\n\nContext (3–12s): Chatbot usually tumhare prompt ka answer deta hai. Agent goal leta hai, steps plan karta hai aur tools use karke kaam complete kar sakta hai.\n\nExample (12–25s): Chatbot trip ke options batayega; agent, permissions ke saath, options compare karke itinerary draft kar sakta hai.\n\nTakeaway (25–30s): Agent magic nahi hai — permissions, evaluation aur human oversight zaroori hain.', caption:'AI chatbot vs AI agent: difference in 30 seconds. Save this for later.', hashtags:'#AI #AITools #TechHindi #ArtificialIntelligence', platform:'BOTH', status:'IN_REVIEW', createdAt:new Date().toISOString() },
@@ -19,11 +20,22 @@ function App() {
  const [topic,setTopic] = useState('');
  const [platform,setPlatform] = useState<'BOTH'|'INSTAGRAM_REELS'|'YOUTUBE_SHORTS'>('BOTH');
  const [notice,setNotice] = useState('');
+ const [trends,setTrends] = useState<Trend[]>([]);
+ const [trendsLoading,setTrendsLoading] = useState(false);
  const [busy,setBusy] = useState(false);
  const api = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
  useEffect(()=>{ fetch(api+'/api/content').then(r=>{if(!r.ok) throw new Error(); return r.json()}).then(data=>{setItems(data);setConnected(true)}).catch(()=>{setItems(demoItems);setConnected(false)}); },[api]);
  const visible = useMemo(()=>items.filter(i=>(filter==='ALL'||i.status===filter)&&[i.topic,i.hook,i.script].some(v=>v?.toLowerCase().includes(query.toLowerCase()))),[items,filter,query]);
  const stats = [{label:'Content drafts',value:items.length,icon:FileText},{label:'Needs review',value:items.filter(i=>i.status==='IN_REVIEW').length,icon:Activity},{label:'Approved',value:items.filter(i=>i.status==='APPROVED').length,icon:Check}];
+ async function loadTrends() {
+  setTrendsLoading(true); setNotice('');
+  try {
+   const res=await fetch(api+'/api/trends');
+   if(!res.ok) { let message='Trend research failed.'; try { const body=await res.json(); message=body.detail??body.message??message; } catch {} throw new Error(message); }
+   setTrends(await res.json());
+  } catch(e) { setNotice(e instanceof Error ? e.message : 'Trend research failed. Check backend and API key.'); }
+  finally { setTrendsLoading(false); }
+ }
  async function createDraft(e:React.FormEvent) {
   e.preventDefault(); if(!topic.trim()) return; setBusy(true); setNotice('');
   try {
@@ -45,8 +57,9 @@ function App() {
    <div className="sidebar-bottom"><div className={'connection-dot '+(connected?'live':'')}></div><div><b>{connected?'Backend connected':'Preview mode'}</b><small>{connected?'PostgreSQL API':'Sample content loaded'}</small></div></div>
   </aside>
   <main className="main"><header className="topbar"><div><span className="breadcrumb">Workspace /</span> <b>Overview</b></div><div className="top-actions"><span className="avatar">US</span><span className="user-name">Creator workspace</span></div></header>
-   <section className="welcome"><div><div className="eyebrow"><span className="pulse"></span> YOUR CREATOR COMMAND CENTER</div><h1>Make ideas <span>impossible to scroll past.</span></h1><p>Research, script, review, and ship short-form AI & tech content — without losing your voice.</p><div className="welcome-actions"><button className="primary" onClick={()=>setShowCreate(true)}><Plus size={17}/> Create a draft</button><button className="secondary" onClick={()=>setNotice('Trend discovery integration is on the roadmap. Add source links and validate current trends before publishing.')}><Flame size={17}/> Explore trends <ArrowUpRight size={15}/></button></div></div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="hero-core"><Sparkles size={37}/></div><div className="float-card card-reels"><Instagram size={17}/><span>Reels</span><b>9:16</b></div><div className="float-card card-shorts"><Youtube size={18}/><span>Shorts</span><b>30s</b></div><div className="float-tag">HINGLISH • AI • TECH</div></div></section>
+   <section className="welcome"><div><div className="eyebrow"><span className="pulse"></span> YOUR CREATOR COMMAND CENTER</div><h1>Make ideas <span>impossible to scroll past.</span></h1><p>Research, script, review, and ship short-form AI & tech content — without losing your voice.</p><div className="welcome-actions"><button className="primary" onClick={()=>setShowCreate(true)}><Plus size={17}/> Create a draft</button><button className="secondary" onClick={loadTrends} disabled={trendsLoading}><Flame size={17}/> {trendsLoading?'Researching…':'Explore trends'} <ArrowUpRight size={15}/></button></div></div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="hero-core"><Sparkles size={37}/></div><div className="float-card card-reels"><Instagram size={17}/><span>Reels</span><b>9:16</b></div><div className="float-card card-shorts"><Youtube size={18}/><span>Shorts</span><b>30s</b></div><div className="float-tag">HINGLISH • AI • TECH</div></div></section>
    {notice&&<div className="notice">{notice}<button onClick={()=>setNotice('')}><X size={15}/></button></div>}
+   {trends.length>0&&<section className="trend-panel"><div className="section-heading"><div><div className="eyebrow">LIVE WEB RESEARCH</div><h2>Ideas worth exploring</h2></div><button className="secondary" onClick={loadTrends} disabled={trendsLoading}>{trendsLoading?'Refreshing…':'Refresh research'}</button></div><div className="trend-grid">{trends.map((trend,i)=><article className="trend-card" key={trend.title}><div className="trend-number">IDEA 0{i+1}</div><h3>{trend.title}</h3><p>{trend.angle}</p><div className="review-label">WHY NOW</div><p>{trend.whyNow}</p><div className="review-label">AUDIENCE FIT</div><p>{trend.audienceFit}</p><div className="trend-sources">{trend.sourceUrls.map(url=><a key={url} href={url} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>)}</div><button className="secondary trend-use" onClick={()=>{setTopic(trend.title);setShowCreate(true)}}><Plus size={14}/> Turn into draft</button></article>)}</div></section>}
    <section className="stats">{stats.map(s=><div className="stat-card" key={s.label}><div className="stat-top"><span>{s.label}</span><s.icon size={18}/></div><strong>{s.value.toString().padStart(2,'0')}</strong><small>{s.label==='Needs review'?'Waiting for your approval':s.label==='Approved'?'Ready for publishing':'Across your workspace'}</small></div>)}</section>
    <section className="library"><div className="section-heading"><div><div className="eyebrow">YOUR PIPELINE</div><h2>Content studio <span className="count">{visible.length}</span></h2></div><button className="primary compact" onClick={()=>setShowCreate(true)}><Plus size={16}/> New draft</button></div>
     <div className="toolbar"><div className="search"><Search size={17}/><input placeholder="Search topics, hooks, scripts..." value={query} onChange={e=>setQuery(e.target.value)}/></div><div className="filters">{(['ALL','IDEA','DRAFT','IN_REVIEW','APPROVED','PUBLISHED'] as const).map(f=><button key={f} className={filter===f?'filter active-filter':'filter'} onClick={()=>setFilter(f)}>{f==='ALL'?'All':statusLabel[f as Status]??f}</button>)}</div></div>
