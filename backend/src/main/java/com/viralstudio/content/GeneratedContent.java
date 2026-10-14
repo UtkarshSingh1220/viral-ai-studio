@@ -4,5 +4,7 @@ public record GeneratedContent(
     String hook,
     String script,
     String caption,
-    String hashtags
+    String hashtags,
+    String sourceLinks,
+    String verificationNotes
 ) {}
