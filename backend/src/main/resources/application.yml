@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: viral-ai-studio
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/viralstudio}
+    username: ${DATABASE_USERNAME:viralstudio}
+    password: ${DATABASE_PASSWORD:viralstudio}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+server:
+  port: ${PORT:8080}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
