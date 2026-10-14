@@ -11,8 +11,12 @@ import java.util.UUID;
 @RequestMapping("/api/content")
 public class ContentController {
     private final ContentItemRepository repository;
+    private final AiContentService aiContentService;
 
-    public ContentController(ContentItemRepository repository) { this.repository = repository; }
+    public ContentController(ContentItemRepository repository, AiContentService aiContentService) {
+        this.repository = repository;
+        this.aiContentService = aiContentService;
+    }
 
     @GetMapping
     public List<ContentItem> list(@RequestParam(required = false) ContentStatus status) {
@@ -24,6 +28,14 @@ public class ContentController {
     public ContentItem create(@Valid @RequestBody CreateContentRequest request) {
         return repository.save(new ContentItem(request.topic(), request.hook(), request.script(),
             request.caption(), request.hashtags(), request.platform()));
+    }
+
+    @PostMapping("/generate")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ContentItem generate(@Valid @RequestBody GenerateContentRequest request) {
+        GeneratedContent generated = aiContentService.generate(request.topic(), request.platform());
+        return repository.save(new ContentItem(request.topic(), generated.hook(), generated.script(),
+            generated.caption(), generated.hashtags(), request.platform()));
     }
 
     @PatchMapping("/{id}/status")
