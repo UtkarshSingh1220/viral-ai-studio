@@ -6,7 +6,8 @@ A semi-automated content studio for Hinglish AI and technology videos on Instagr
 
 - React + TypeScript dashboard with content cards, search, status filters, draft creation, and editorial review.
 - Java 21 + Spring Boot REST API with PostgreSQL persistence and Flyway migrations.
-- AI-powered script generation through the OpenAI Responses API with schema-constrained JSON output.
+- AI-powered script generation through the OpenAI Responses API with schema-constrained JSON output and optional live web research.
+- Live AI/technology trend research endpoint that returns source URLs and audience-specific Hinglish angles.
 - Editorial states: IDEA, DRAFT, IN_REVIEW, APPROVED, REJECTED, PUBLISHED.
 - Human approval required; approval does not automatically publish.
 - Demo content is shown if the API cannot be reached; AI generation requires the backend and an API key.
@@ -25,7 +26,8 @@ Backend uses `OPENAI_API_KEY` and optional `OPENAI_MODEL` (defaults to `gpt-4o-m
 
 - `GET /api/content` — list content; optional `?status=DRAFT`
 - `POST /api/content` — save a manually authored draft
-- `POST /api/content/generate` — generate and save a draft; body: `{"topic":"RAG for Java developers","platform":"BOTH"}`
+- `POST /api/content/generate` — research and generate a draft; body: `{"topic":"RAG for Java developers","platform":"BOTH"}`
+- `GET /api/trends` — research five current AI/technology video ideas with source URLs
 - `PATCH /api/content/{id}/status` — update editorial status and notes
 - `DELETE /api/content/{id}` — delete a content item
 
