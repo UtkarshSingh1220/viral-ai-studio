@@ -42,6 +42,10 @@ Engagement rate is calculated as `(likes + comments + shares + saves) / views * 
 - Social publishing is not automatic; official platform API credentials, permissions, and account eligibility are required.
 - Never commit API keys or credentials.
 
+## API access token
+
+The backend now requires a shared API token on `/api/**` requests. Set `APP_API_TOKEN` to a long, randomly generated secret before starting the backend; if it is missing, API routes fail closed with HTTP 503. In the dashboard, enter the same token in the API access token field and select Connect. The token is stored in `sessionStorage` for the current browser tab session and sent in the `X-App-Token` header. Use HTTPS outside local development, rotate the token if exposed, and never commit the real value. This shared-token gate is intended for a single-creator/private deployment; it is not a substitute for per-user accounts, roles, or identity management.
+
 ## Production-readiness status
 
 This repository is an MVP and is **not yet safe to expose directly to the public internet**. Before a public or multi-user deployment, complete and verify these gates:
