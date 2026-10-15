@@ -41,3 +41,20 @@ Engagement rate is calculated as `(likes + comments + shares + saves) / views * 
 - Analytics snapshots are currently entered through the API; official Instagram/YouTube analytics ingestion is not connected.
 - Social publishing is not automatic; official platform API credentials, permissions, and account eligibility are required.
 - Never commit API keys or credentials.
+
+## Production-readiness status
+
+This repository is an MVP and is **not yet safe to expose directly to the public internet**. Before a public or multi-user deployment, complete and verify these gates:
+
+- [ ] Add authentication and authorization to every content, trend, and analytics API; do not rely on the frontend to enforce access.
+- [ ] Add request validation, request-size limits, rate limits, and safe error responses for AI generation and research endpoints.
+- [ ] Configure production CORS to allow only the deployed frontend origin; do not use wildcard origins with credentials.
+- [ ] Store OpenAI and database credentials in the hosting provider's secret manager. Never use the example/local database credentials in production.
+- [ ] Use managed PostgreSQL with TLS, automated backups, and a tested restore procedure.
+- [ ] Add application health/readiness checks, structured logs, error monitoring, and alerts; redact prompts, tokens, and secrets where appropriate.
+- [ ] Run the backend and frontend builds/tests in CI and verify a deployed smoke test against a non-production database and a replaceable API key.
+- [ ] Confirm AI-generated source links and claims manually before publishing; publishing and platform analytics ingestion are not implemented.
+
+### Local vs production configuration
+
+Copy .env.example to a local environment file only for development, keep real secrets out of Git, and use environment/secret-manager injection in hosted environments. DATABASE_PASSWORD=change-me and the credentials in docker-compose.yml are local-development values, not production credentials. The UI may show sample content when the API is unavailable; in preview mode, edits are temporary and disappear on refresh. A failed status update while the API is connected is now surfaced instead of being silently treated as a local success.
