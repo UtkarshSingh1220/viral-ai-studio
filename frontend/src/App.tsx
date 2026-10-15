@@ -28,15 +28,18 @@ function App() {
  const [busy,setBusy] = useState(false);
  const [analytics,setAnalytics] = useState<Analytics | null>(null);
  const [analyticsLoading,setAnalyticsLoading] = useState(false);
+ const [apiToken,setApiToken] = useState(()=>sessionStorage.getItem('viralStudioApiToken') ?? '');
+ const [tokenDraft,setTokenDraft] = useState(()=>sessionStorage.getItem('viralStudioApiToken') ?? '');
  const api = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
- useEffect(()=>{ fetch(api+'/api/content').then(r=>{if(!r.ok) throw new Error(); return r.json()}).then(data=>{setItems(data);setConnected(true)}).catch(()=>{setItems(demoItems);setConnected(false)}); fetch(api+'/api/analytics/dashboard').then(r=>{if(!r.ok) throw new Error();return r.json()}).then(setAnalytics).catch(()=>setAnalytics(null)); },[api]);
- async function loadAnalytics() { setAnalyticsLoading(true); try { const res=await fetch(api+'/api/analytics/dashboard'); if(!res.ok) throw new Error(); setAnalytics(await res.json()); } catch { setNotice('Analytics are unavailable until the backend is running and performance snapshots have been recorded.'); } finally { setAnalyticsLoading(false); } }
+ const apiFetch = (path:string, init:RequestInit = {}) => fetch(api+path,{...init,headers:{...(init.headers as Record<string,string> | undefined),...(apiToken?{'X-App-Token':apiToken}:{})}});
+ useEffect(()=>{ if(!apiToken){setItems(demoItems);setConnected(false);setAnalytics(null);return;} apiFetch('/api/content').then(r=>{if(!r.ok) throw new Error(); return r.json()}).then(data=>{setItems(data);setConnected(true)}).catch(()=>{setItems(demoItems);setConnected(false)}); apiFetch('/api/analytics/dashboard').then(r=>{if(!r.ok) throw new Error();return r.json()}).then(setAnalytics).catch(()=>setAnalytics(null)); },[api,apiToken]);
+ async function loadAnalytics() { setAnalyticsLoading(true); try { const res=await apiFetch('/api/analytics/dashboard'); if(!res.ok) throw new Error(); setAnalytics(await res.json()); } catch { setNotice('Analytics are unavailable until the backend is running and performance snapshots have been recorded.'); } finally { setAnalyticsLoading(false); } }
  const visible = useMemo(()=>items.filter(i=>(filter==='ALL'||i.status===filter)&&[i.topic,i.hook,i.script].some(v=>v?.toLowerCase().includes(query.toLowerCase()))),[items,filter,query]);
  const stats = [{label:'Content drafts',value:items.length,icon:FileText},{label:'Needs review',value:items.filter(i=>i.status==='IN_REVIEW').length,icon:Activity},{label:'Approved',value:items.filter(i=>i.status==='APPROVED').length,icon:Check}];
  async function loadTrends() {
   setTrendsLoading(true); setNotice('');
   try {
-   const res=await fetch(api+'/api/trends');
+   const res=await apiFetch('/api/trends');
    if(!res.ok) { let message='Trend research failed.'; try { const body=await res.json(); message=body.detail??body.message??message; } catch {} throw new Error(message); }
    setTrends(await res.json());
   } catch(e) { setNotice(e instanceof Error ? e.message : 'Trend research failed. Check backend and API key.'); }
@@ -45,7 +48,7 @@ function App() {
  async function createDraft(e:React.FormEvent) {
   e.preventDefault(); if(!topic.trim()) return; setBusy(true); setNotice('');
   try {
-   const res=await fetch(api+'/api/content/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic,platform})});
+   const res=await apiFetch('/api/content/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic,platform})});
    if(!res.ok) { let message='AI generation failed.'; try { const body=await res.json(); message=body.detail??body.message??body.error??message; } catch {} throw new Error(message); }
    const saved=await res.json(); setItems(prev=>[saved,...prev]); setConnected(true); setTopic(''); setShowCreate(false);
   } catch(e) {
@@ -53,7 +56,7 @@ function App() {
   } finally { setBusy(false); }
  }
  async function changeStatus(item:Item,status:Status) {
-  try { const res=await fetch(api+'/api/content/'+item.id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,editorNotes:item.editorNotes??null})}); if(!res.ok) throw new Error(); const updated=await res.json(); setItems(prev=>prev.map(i=>i.id===item.id?updated:i)); setConnected(true); }
+  try { const res=await apiFetch('/api/content/'+item.id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,editorNotes:item.editorNotes??null})}); if(!res.ok) throw new Error(); const updated=await res.json(); setItems(prev=>prev.map(i=>i.id===item.id?updated:i)); setConnected(true); }
   catch { if (!connected) { setItems(prev=>prev.map(i=>i.id===item.id?{...i,status}:i)); setNotice('Preview mode: this status change is local only and will be lost on refresh.'); } else { setNotice('Could not update status. The server did not confirm the change; refresh and try again.'); } }
   setSelected(null);
  }
@@ -62,7 +65,7 @@ function App() {
    <div className="workspace-label">WORKSPACE</div><button className="nav-item active"><Activity size={18}/> Overview</button><button className="nav-item" onClick={()=>setFilter('ALL')}><Clapperboard size={18}/> Content library <span>{items.length}</span></button><button className="nav-item" onClick={()=>setFilter('IN_REVIEW')}><FileText size={18}/> Review queue</button>
    <div className="sidebar-bottom"><div className={'connection-dot '+(connected?'live':'')}></div><div><b>{connected?'Backend connected':'Preview mode'}</b><small>{connected?'PostgreSQL API':'Sample content loaded'}</small></div></div>
   </aside>
-  <main className="main"><header className="topbar"><div><span className="breadcrumb">Workspace /</span> <b>Overview</b></div><div className="top-actions"><span className="avatar">US</span><span className="user-name">Creator workspace</span></div></header>
+  <main className="main"><header className="topbar"><div><span className="breadcrumb">Workspace /</span> <b>Overview</b></div><div className="top-actions"><input aria-label="API access token" type="password" autoComplete="current-password" placeholder="API access token" value={tokenDraft} onChange={e=>setTokenDraft(e.target.value)} style={{maxWidth:190}}/><button className="secondary" onClick={()=>{const value=tokenDraft.trim();if(value){sessionStorage.setItem("viralStudioApiToken",value);setApiToken(value);setNotice("API token saved for this browser session.");}else{sessionStorage.removeItem("viralStudioApiToken");setApiToken("");setNotice("API token cleared. API access is disabled.");}}}>Connect</button><span className="avatar">US</span></div></header>
    <section className="welcome"><div><div className="eyebrow"><span className="pulse"></span> YOUR CREATOR COMMAND CENTER</div><h1>Make ideas <span>impossible to scroll past.</span></h1><p>Research, script, review, and ship short-form AI & tech content — without losing your voice.</p><div className="welcome-actions"><button className="primary" onClick={()=>setShowCreate(true)}><Plus size={17}/> Create a draft</button><button className="secondary" onClick={loadTrends} disabled={trendsLoading}><Flame size={17}/> {trendsLoading?'Researching…':'Explore trends'} <ArrowUpRight size={15}/></button></div></div><div className="hero-art"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><div className="hero-core"><Sparkles size={37}/></div><div className="float-card card-reels"><Clapperboard size={17}/><span>Reels</span><b>9:16</b></div><div className="float-card card-shorts"><Activity size={18}/><span>Shorts</span><b>30s</b></div><div className="float-tag">HINGLISH • AI • TECH</div></div></section>
    {notice&&<div className="notice">{notice}<button onClick={()=>setNotice('')}><X size={15}/></button></div>}
    {trends.length>0&&<section className="trend-panel"><div className="section-heading"><div><div className="eyebrow">LIVE WEB RESEARCH</div><h2>Ideas worth exploring</h2></div><button className="secondary" onClick={loadTrends} disabled={trendsLoading}>{trendsLoading?'Refreshing…':'Refresh research'}</button></div><div className="trend-grid">{trends.map((trend,i)=><article className="trend-card" key={trend.title}><div className="trend-number">IDEA 0{i+1}</div><h3>{trend.title}</h3><p>{trend.angle}</p><div className="review-label">WHY NOW</div><p>{trend.whyNow}</p><div className="review-label">AUDIENCE FIT</div><p>{trend.audienceFit}</p><div className="trend-sources">{trend.sourceUrls.map(url=><a key={url} href={url} target="_blank" rel="noreferrer">Source <ArrowUpRight size={12}/></a>)}</div><button className="secondary trend-use" onClick={()=>{setTopic(trend.title);setShowCreate(true)}}><Plus size={14}/> Turn into draft</button></article>)}</div></section>}
