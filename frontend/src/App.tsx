@@ -54,7 +54,7 @@ function App() {
  }
  async function changeStatus(item:Item,status:Status) {
   try { const res=await fetch(api+'/api/content/'+item.id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,editorNotes:item.editorNotes??null})}); if(!res.ok) throw new Error(); const updated=await res.json(); setItems(prev=>prev.map(i=>i.id===item.id?updated:i)); setConnected(true); }
-  catch { setItems(prev=>prev.map(i=>i.id===item.id?{...i,status}:i)); setNotice('Demo mode: status change is local only until the backend is running.'); }
+  catch { if (!connected) { setItems(prev=>prev.map(i=>i.id===item.id?{...i,status}:i)); setNotice('Preview mode: this status change is local only and will be lost on refresh.'); } else { setNotice('Could not update status. The server did not confirm the change; refresh and try again.'); } }
   setSelected(null);
  }
  return <div className="app-shell">
